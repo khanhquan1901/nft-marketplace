@@ -1,31 +1,124 @@
+'use client'
+
+import { useState } from "react";
 import { ConnectButton } from "@/components/ConnectButton";
 import { MintNFT } from "@/components/MintNFT";
 import { ListNFT } from "@/components/ListNFT";
-import { MarketplaceFeed } from "@/components/MarketplaceFeed"; // Import component mới
+import { MarketplaceFeed } from "@/components/MarketplaceFeed";
+import { MyNFTs } from "@/components/MyNFTs";
+
+type Tab = "explore" | "mint" | "my-nfts" | "list";
+
+const tabs: { id: Tab; label: string; icon: string }[] = [
+  { id: "explore", label: "Khám Phá", icon: "🔥" },
+  { id: "mint", label: "Mint NFT", icon: "✨" },
+  { id: "my-nfts", label: "NFT Của Tôi", icon: "💎" },
+  { id: "list", label: "Đăng Bán", icon: "🏷️" },
+];
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<Tab>("explore");
+
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center pt-20 px-4 pb-20">
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-4">
+    <div className="main-content">
+      {/* ─── Navbar ─── */}
+      <nav className="navbar" id="navbar">
+        <div className="navbar__logo">
+          <span className="navbar__logo-icon">◆</span>
           NFT Marketplace
+        </div>
+        <ConnectButton />
+      </nav>
+
+      {/* ─── Hero Section ─── */}
+      <section className="hero" id="hero">
+        <h1 className="hero__title">
+          Khám phá, sưu tầm &<br />
+          <span className="hero__title-gradient">giao dịch NFT độc quyền</span>
         </h1>
-        <p className="text-gray-500 text-lg">
-          Mua, bán và sưu tầm các NFT độc quyền
+        <p className="hero__subtitle">
+          Sàn giao dịch phi tập trung nơi bạn có thể mint, mua bán các tác phẩm
+          kỹ thuật số được bảo mật bởi blockchain.
         </p>
-      </div>
 
-      <ConnectButton />
-      
-      {/* Khu vực thao tác (Mint & List) */}
-      <div className="flex flex-col md:flex-row gap-6 w-full max-w-4xl justify-center items-start">
-        <MintNFT />
-        <ListNFT />
-      </div>
+        {/* ─── Tab Navigation ─── */}
+        <div
+          className="tabs"
+          style={{ display: "inline-flex", margin: "0 auto" }}
+          id="tab-navigation"
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              id={`tab-${tab.id}`}
+              className={`tab-button ${
+                activeTab === tab.id ? "tab-button--active" : ""
+              }`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span style={{ marginRight: 6 }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
-      {/* Feed hiển thị các NFT đang bán trên sàn */}
-      <MarketplaceFeed />
-      
-    </main>
+      {/* ─── Content Area ─── */}
+      <section className="container" style={{ paddingBottom: "3rem" }}>
+        {activeTab === "explore" && <MarketplaceFeed />}
+
+        {activeTab === "mint" && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              animation: "fadeIn 0.4s ease",
+            }}
+          >
+            <MintNFT />
+          </div>
+        )}
+
+        {activeTab === "my-nfts" && <MyNFTs />}
+
+        {activeTab === "list" && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              animation: "fadeIn 0.4s ease",
+            }}
+          >
+            <ListNFT />
+          </div>
+        )}
+      </section>
+
+      {/* ─── Footer ─── */}
+      <footer className="footer" id="footer">
+        <p>
+          Built with 💜 on{" "}
+          <a
+            href="https://ethereum.org"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Ethereum
+          </a>{" "}
+          · Powered by{" "}
+          <a href="https://nextjs.org" target="_blank" rel="noopener noreferrer">
+            Next.js
+          </a>{" "}
+          &{" "}
+          <a
+            href="https://book.getfoundry.sh"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Foundry
+          </a>
+        </p>
+      </footer>
+    </div>
   );
 }

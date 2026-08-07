@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { useQueryClient } from '@tanstack/react-query'
 import { formatEther } from 'viem'
 import { MARKETPLACE_ADDRESS, MARKETPLACE_ABI } from '../constants'
 
@@ -9,30 +10,85 @@ export function MarketplaceFeed() {
   const [mounted, setMounted] = useState(false)
   const { isConnected } = useAccount()
 
-  // Tự động quét từ Token ID 0 đến 10
-  const activeTokenIds = Array.from({ length: 11 }, (_, i) => BigInt(i))
+  // Quét từ Token ID 0 đến 19
+  const activeTokenIds = Array.from({ length: 20 }, (_, i) => BigInt(i))
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  if (!mounted || !isConnected) return null
+  if (!mounted) return null
+
+  if (!isConnected) {
+    return (
+      <div className="empty-state animate-fadeIn">
+        <span className="empty-state__icon">🔗</span>
+        <p className="empty-state__title">Chưa kết nối ví</p>
+        <p className="empty-state__text">
+          Kết nối ví để xem các NFT đang bán trên sàn.
+        </p>
+      </div>
+    )
+  }
 
   return (
-    <div className="w-full max-w-4xl mt-10 px-4">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">NFT Đang Trưng Bày Trên Sàn</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="animate-fadeIn">
+      <div className="section-header">
+        <h2 className="section-header__title">🔥 NFT Đang Bán</h2>
+        <p className="section-header__subtitle">
+          Khám phá các NFT đang được trưng bày trên sàn giao dịch
+        </p>
+      </div>
+
+      <div className="nft-grid">
         {activeTokenIds.map((id) => (
           <NFTCard key={id.toString()} tokenId={id} />
         ))}
       </div>
+
+      <MarketplaceEmptyCheck tokenIds={activeTokenIds} />
+    </div>
+  )
+}
+
+/** Kiểm tra xem có NFT nào đang bán không */
+function MarketplaceEmptyCheck({ tokenIds }: { tokenIds: bigint[] }) {
+  const results = tokenIds.map((id) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { data } = useReadContract({
+      address: MARKETPLACE_ADDRESS,
+      abi: MARKETPLACE_ABI,
+      functionName: 'listings',
+      args: [id],
+    })
+    return data
+  })
+
+  const hasAny = results.some((data) => {
+    if (!data) return false
+    const seller = (data as any)[1]
+    return seller !== '0x0000000000000000000000000000000000000000'
+  })
+
+  if (hasAny) return null
+
+  const allLoaded = results.every((r) => r !== undefined)
+  if (!allLoaded) return null
+
+  return (
+    <div className="empty-state">
+      <span className="empty-state__icon">🏜️</span>
+      <p className="empty-state__title">Chưa có NFT nào đang bán</p>
+      <p className="empty-state__text">
+        Hãy mint NFT rồi đăng bán tại tab &quot;Đăng Bán&quot;!
+      </p>
     </div>
   )
 }
 
 function NFTCard({ tokenId }: { tokenId: bigint }) {
   const { address: currentUserAddress } = useAccount()
+  const queryClient = useQueryClient()
 
   const { data: listingData, refetch: refetchListing } = useReadContract({
     address: MARKETPLACE_ADDRESS,
@@ -54,11 +110,13 @@ function NFTCard({ tokenId }: { tokenId: bigint }) {
     hash,
   })
 
+  // Khi mua/hủy thành công → refresh tất cả data
   useEffect(() => {
     if (isConfirmed) {
       refetchListing()
+      queryClient.invalidateQueries()
     }
-  }, [isConfirmed, refetchListing])
+  }, [isConfirmed, refetchListing, queryClient])
 
   const price = listingData ? (listingData as any)[0] : BigInt(0)
   const seller = listingData ? (listingData as any)[1] : '0x0'
@@ -87,38 +145,76 @@ function NFTCard({ tokenId }: { tokenId: bigint }) {
 
   if (!isForSale) return null
 
-  return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden flex flex-col p-4">
-      <div className="h-40 bg-gray-100 flex items-center justify-center p-2 text-center rounded-lg mb-3">
-        <span className="text-xs text-gray-600 font-medium break-all">URI: {tokenURI || 'Loading...'}</span>
-      </div>
-      
-      <div className="flex flex-col flex-grow">
-        <span className="text-sm font-semibold text-blue-600 mb-1">Token ID: #{tokenId.toString()}</span>
-        <div className="text-lg font-bold text-gray-900 mb-1">
-          {formatEther(price)} ETH
-        </div>
-        <p className="text-xs text-gray-400 truncate mb-4">Người bán: {seller}</p>
-        
-        {isOwner ? (
-          <button 
-            onClick={handleCancel}
-            disabled={isPending || isConfirming}
-            className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-lg transition-colors disabled:bg-gray-400"
-          >
-            {isPending || isConfirming ? 'Đang xử lý...' : 'Hủy Bán (Cancel)'}
-          </button>
-        ) : (
-          <button 
-            onClick={handleBuy}
-            disabled={isPending || isConfirming}
-            className="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:bg-gray-400"
-          >
-            {isPending || isConfirming ? 'Đang giao dịch...' : 'Mua Ngay'}
-          </button>
-        )}
+  const uriString = tokenURI ? String(tokenURI) : ''
 
-        {error && <p className="mt-2 text-xs text-red-600 font-medium">❌ Lỗi: {(error as any).shortMessage || error.message}</p>}
+  return (
+    <div className="nft-card" id={`nft-card-${tokenId}`}>
+      {/* Image area */}
+      <div className="nft-card__image">
+        <span className="nft-card__image-text">
+          {uriString
+            ? `${uriString.substring(0, 60)}${uriString.length > 60 ? '...' : ''}`
+            : 'Loading...'}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div className="nft-card__body">
+        <span className="nft-card__token-id">
+          ◆ Token #{tokenId.toString()}
+        </span>
+
+        <div className="nft-card__price">
+          <span style={{ color: 'var(--accent-cyan)', fontSize: '1rem' }}>Ξ</span>
+          {formatEther(price)}
+          <span className="nft-card__price-eth">ETH</span>
+        </div>
+
+        <div className="nft-card__seller" title={seller}>
+          👤 {seller.slice(0, 6)}...{seller.slice(-4)}
+        </div>
+
+        <div style={{ marginTop: 'auto', paddingTop: '12px' }}>
+          {isOwner ? (
+            <button
+              onClick={handleCancel}
+              disabled={isPending || isConfirming}
+              className={`btn btn-warning ${isPending || isConfirming ? 'btn--loading' : ''}`}
+              style={{ width: '100%' }}
+              id={`btn-cancel-${tokenId}`}
+            >
+              {isPending || isConfirming ? (
+                <>
+                  <span className="spinner" /> Đang xử lý...
+                </>
+              ) : (
+                '🚫 Hủy Bán'
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={handleBuy}
+              disabled={isPending || isConfirming}
+              className={`btn btn-success ${isPending || isConfirming ? 'btn--loading' : ''}`}
+              style={{ width: '100%' }}
+              id={`btn-buy-${tokenId}`}
+            >
+              {isPending || isConfirming ? (
+                <>
+                  <span className="spinner" /> Đang giao dịch...
+                </>
+              ) : (
+                '⚡ Mua Ngay'
+              )}
+            </button>
+          )}
+        </div>
+
+        {error && (
+          <div className="status-badge status-badge--error" style={{ fontSize: '0.75rem' }}>
+            ❌ {(error as any).shortMessage || error.message}
+          </div>
+        )}
       </div>
     </div>
   )
