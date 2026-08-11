@@ -197,7 +197,7 @@ export function ListNFT() {
       )}
       {isConfirmed && step === 'APPROVE' && (
         <div className="status-badge status-badge--warning">
-          ✅ Phê duyệt xong! Bấm tiếp để Đăng Bán.
+          ✅ Đã phê duyệt xong! Bấm tiếp để Đăng Bán.
         </div>
       )}
       {error && (
