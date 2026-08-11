@@ -1,4 +1,4 @@
-export const MARKETPLACE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+export const MARKETPLACE_ADDRESS = "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE";
 
 export const MARKETPLACE_ABI = [
   { type: "constructor", inputs: [], stateMutability: "nonpayable" },
@@ -6,6 +6,7 @@ export const MARKETPLACE_ABI = [
   { type: "function", name: "balanceOf", inputs: [{ name: "owner", type: "address", internalType: "address" }], outputs: [{ name: "", type: "uint256", internalType: "uint256" }], stateMutability: "view" },
   { type: "function", name: "buyNFT", inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "payable" },
   { type: "function", name: "cancelListing", inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+  { type: "function", name: "getAllTokens", inputs: [], outputs: [{ name: "", type: "uint256[]", internalType: "uint256[]" }], stateMutability: "view" },
   { type: "function", name: "getApproved", inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }], outputs: [{ name: "", type: "address", internalType: "address" }], stateMutability: "view" },
   { type: "function", name: "isApprovedForAll", inputs: [{ name: "owner", type: "address", internalType: "address" }, { name: "operator", type: "address", internalType: "address" }], outputs: [{ name: "", type: "bool", internalType: "bool" }], stateMutability: "view" },
   { type: "function", name: "listNFT", inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }, { name: "price", type: "uint256", internalType: "uint256" }], outputs: [], stateMutability: "nonpayable" },

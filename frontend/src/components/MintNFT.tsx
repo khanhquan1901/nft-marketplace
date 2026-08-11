@@ -1,65 +1,118 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { useQueryClient } from '@tanstack/react-query'
 import { MARKETPLACE_ADDRESS, MARKETPLACE_ABI } from '../constants'
 
 export function MintNFT() {
-  // Quản lý state của ô nhập link ảnh (Token URI)
   const [tokenURI, setTokenURI] = useState('')
   const { isConnected } = useAccount()
+  const queryClient = useQueryClient()
 
-  // 1. Hook để gửi giao dịch ghi lên Smart Contract
   const { data: hash, writeContract, isPending, error } = useWriteContract()
 
-  // 2. Hook để lắng nghe xem giao dịch đã được đào (mine) xong chưa
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
   })
 
-  // Hàm xử lý khi bấm nút Mint
+  // Khi mint thành công → invalidate tất cả queries để MyNFTs tự động refresh
+  useEffect(() => {
+    if (isConfirmed) {
+      queryClient.invalidateQueries()
+    }
+  }, [isConfirmed, queryClient])
+
   const handleMint = (e: React.FormEvent) => {
     e.preventDefault()
     if (!tokenURI) return
 
     writeContract({
-      address: MARKETPLACE_ADDRESS, // Địa chỉ contract bạn đã lưu ở file constants
-      abi: MARKETPLACE_ABI,         // ABI của contract
-      functionName: 'mintToken',    // Tên hàm trong Solidity
-      args: [tokenURI],             // Tham số truyền vào hàm
+      address: MARKETPLACE_ADDRESS,
+      abi: MARKETPLACE_ABI,
+      functionName: 'mintToken',
+      args: [tokenURI],
     })
   }
 
-  // Ẩn form nếu chưa kết nối ví
-  if (!isConnected) return null
+  if (!isConnected) {
+    return (
+      <div className="empty-state animate-fadeIn">
+        <span className="empty-state__icon">🔗</span>
+        <p className="empty-state__title">Chưa kết nối ví</p>
+        <p className="empty-state__text">
+          Hãy kết nối ví để bắt đầu mint NFT của bạn.
+        </p>
+      </div>
+    )
+  }
 
   return (
-    <div className="w-full max-w-md mt-10 p-6 bg-white rounded-xl shadow-md border border-gray-100">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Mint NFT Mới</h2>
-      
-      <form onSubmit={handleMint} className="flex flex-col gap-4">
-        <input
-          type="text"
-          placeholder="Nhập Token URI (VD: ipfs://Qm...)"
-          value={tokenURI}
-          onChange={(e) => setTokenURI(e.target.value)}
-          className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isPending || isConfirming}
-        />
-        
+    <div className="glass-card form-card" id="mint-nft-form">
+      <span className="form-card__icon">✨</span>
+      <h2 className="form-card__title">Mint NFT Mới</h2>
+
+      <form onSubmit={handleMint} className="form-card__form">
+        <div>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              marginBottom: '6px',
+            }}
+          >
+            Token URI
+          </label>
+          <input
+            type="text"
+            placeholder="ipfs://QmXxx... hoặc URL metadata"
+            value={tokenURI}
+            onChange={(e) => setTokenURI(e.target.value)}
+            className="input-dark"
+            disabled={isPending || isConfirming}
+            id="input-token-uri"
+          />
+        </div>
+
         <button
           type="submit"
           disabled={isPending || isConfirming || !tokenURI}
-          className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors disabled:bg-gray-400"
+          className={`btn btn-primary ${isPending || isConfirming ? 'btn--loading' : ''}`}
+          style={{ width: '100%', marginTop: '4px' }}
+          id="btn-mint"
         >
-          {isPending ? 'Đang chờ ký trên ví...' : isConfirming ? 'Đang xác nhận trên chuỗi...' : 'Mint NFT'}
+          {isPending ? (
+            <>
+              <span className="spinner" /> Đang chờ ký trên ví...
+            </>
+          ) : isConfirming ? (
+            <>
+              <span className="spinner" /> Đang xác nhận trên chuỗi...
+            </>
+          ) : (
+            '🚀 Mint NFT'
+          )}
         </button>
       </form>
 
-      {/* Hiển thị thông báo trạng thái */}
-      {hash && <p className="mt-4 text-sm text-gray-500 break-all">Mã giao dịch: {hash}</p>}
-      {isConfirmed && <p className="mt-2 text-sm text-green-600 font-medium">🎉 Mint NFT thành công!</p>}
-      {error && <p className="mt-2 text-sm text-red-600 font-medium">❌ Lỗi: {(error as any).shortMessage || error.message}</p>}
+      {/* Status messages */}
+      {hash && (
+        <div className="status-badge status-badge--info">
+          📋 Tx: {hash.slice(0, 10)}...{hash.slice(-8)}
+        </div>
+      )}
+      {isConfirmed && (
+        <div className="status-badge status-badge--success">
+          🎉 Mint NFT thành công! Xem tại tab &quot;NFT Của Tôi&quot;.
+        </div>
+      )}
+      {error && (
+        <div className="status-badge status-badge--error">
+          ❌ {(error as any).shortMessage || error.message}
+        </div>
+      )}
     </div>
   )
 }

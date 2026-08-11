@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
+import { useQueryClient } from '@tanstack/react-query'
 import { parseEther } from 'viem'
 import { MARKETPLACE_ADDRESS, MARKETPLACE_ABI } from '../constants'
 
@@ -11,6 +12,7 @@ export function ListNFT() {
   const [price, setPrice] = useState('')
   const [step, setStep] = useState<'APPROVE' | 'LIST'>('APPROVE')
   const { isConnected } = useAccount()
+  const queryClient = useQueryClient()
 
   const { data: hash, writeContract, isPending, error } = useWriteContract()
 
@@ -27,14 +29,17 @@ export function ListNFT() {
     if (isConfirmed && step === 'APPROVE') {
       setStep('LIST')
     }
-  }, [isConfirmed, step])
+    // Khi List thành công → invalidate queries để MarketplaceFeed + MyNFTs tự refresh
+    if (isConfirmed && step === 'LIST') {
+      queryClient.invalidateQueries()
+    }
+  }, [isConfirmed, step, queryClient])
 
   const handleAction = (e: React.FormEvent) => {
     e.preventDefault()
     if (!tokenId || !price) return
 
     if (step === 'APPROVE') {
-      // Gọi hàm approve cho phép Marketplace chuyển tokenId này
       writeContract({
         address: MARKETPLACE_ADDRESS,
         abi: MARKETPLACE_ABI,
@@ -42,7 +47,6 @@ export function ListNFT() {
         args: [MARKETPLACE_ADDRESS, BigInt(tokenId)],
       })
     } else {
-      // Gọi hàm listNFT sau khi đã approve xong
       writeContract({
         address: MARKETPLACE_ADDRESS,
         abi: MARKETPLACE_ABI,
@@ -52,52 +56,155 @@ export function ListNFT() {
     }
   }
 
-  if (!mounted || !isConnected) return null
+  if (!mounted) return null
+
+  if (!isConnected) {
+    return (
+      <div className="empty-state animate-fadeIn">
+        <span className="empty-state__icon">🔗</span>
+        <p className="empty-state__title">Chưa kết nối ví</p>
+        <p className="empty-state__text">
+          Hãy kết nối ví để đăng bán NFT trên sàn.
+        </p>
+      </div>
+    )
+  }
 
   return (
-    <div className="w-full max-w-md mt-6 p-6 bg-white rounded-xl shadow-md border border-gray-100">
-      <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Đăng Bán NFT</h2>
-      
-      <form onSubmit={handleAction} className="flex flex-col gap-4">
-        <input
-          type="number"
-          placeholder="Nhập Token ID (VD: 0)"
-          value={tokenId}
-          onChange={(e) => setTokenId(e.target.value)}
-          className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isPending || isConfirming}
+    <div className="glass-card form-card" id="list-nft-form">
+      <span className="form-card__icon">🏷️</span>
+      <h2 className="form-card__title">Đăng Bán NFT</h2>
+
+      <p
+        style={{
+          fontSize: '0.85rem',
+          color: 'var(--text-muted)',
+          textAlign: 'center',
+          marginBottom: '1.25rem',
+          lineHeight: 1.5,
+        }}
+      >
+        Nhập Token ID từ tab &quot;NFT Của Tôi&quot; và giá bán bạn mong muốn.
+      </p>
+
+      {/* Step Indicator */}
+      <div className="step-indicator">
+        <div
+          className={`step-indicator__step ${
+            step === 'APPROVE'
+              ? 'step-indicator__step--active'
+              : 'step-indicator__step--done'
+          }`}
+        >
+          {step === 'LIST' ? '✓' : '1'}
+        </div>
+        <div
+          className={`step-indicator__line ${
+            step === 'LIST' ? 'step-indicator__line--active' : ''
+          }`}
         />
-        <input
-          type="text"
-          placeholder="Giá bán (ETH) (VD: 0.1)"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isPending || isConfirming}
-        />
-        
+        <div
+          className={`step-indicator__step ${
+            step === 'LIST' ? 'step-indicator__step--active' : ''
+          }`}
+        >
+          2
+        </div>
+      </div>
+
+      <form onSubmit={handleAction} className="form-card__form">
+        <div>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              marginBottom: '6px',
+            }}
+          >
+            Token ID
+          </label>
+          <input
+            type="number"
+            placeholder="VD: 0, 1, 2..."
+            value={tokenId}
+            onChange={(e) => setTokenId(e.target.value)}
+            className="input-dark"
+            disabled={isPending || isConfirming}
+            id="input-list-token-id"
+          />
+        </div>
+
+        <div>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              marginBottom: '6px',
+            }}
+          >
+            Giá bán (ETH)
+          </label>
+          <input
+            type="text"
+            placeholder="VD: 0.1"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="input-dark"
+            disabled={isPending || isConfirming}
+            id="input-list-price"
+          />
+        </div>
+
         <button
           type="submit"
           disabled={isPending || isConfirming || !tokenId || !price}
-          className={`px-4 py-3 text-white font-semibold rounded-lg transition-colors disabled:bg-gray-400 ${
-            step === 'APPROVE' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'
+          className={`btn ${step === 'APPROVE' ? 'btn-primary' : 'btn-success'} ${
+            isPending || isConfirming ? 'btn--loading' : ''
           }`}
+          style={{ width: '100%', marginTop: '4px' }}
+          id="btn-list-action"
         >
-          {isPending 
-            ? 'Đang chờ ký ví...' 
-            : isConfirming 
-            ? 'Đang xác nhận trên chuỗi...' 
-            : step === 'APPROVE' 
-            ? 'Bước 1: Phê duyệt (Approve)' 
-            : 'Bước 2: Đăng Bán NFT'}
+          {isPending ? (
+            <>
+              <span className="spinner" /> Đang chờ ký ví...
+            </>
+          ) : isConfirming ? (
+            <>
+              <span className="spinner" /> Đang xác nhận trên chuỗi...
+            </>
+          ) : step === 'APPROVE' ? (
+            '🔓 Bước 1: Phê duyệt (Approve)'
+          ) : (
+            '📤 Bước 2: Đăng Bán NFT'
+          )}
         </button>
       </form>
 
-      {/* Thông báo trạng thái */}
-      {hash && <p className="mt-4 text-sm text-gray-500 break-all">Mã giao dịch: {hash}</p>}
-      {isConfirmed && step === 'LIST' && <p className="mt-2 text-sm text-green-600 font-medium">🎉 Đăng bán thành công lên sàn!</p>}
-      {isConfirmed && step === 'APPROVE' && <p className="mt-2 text-sm text-blue-600 font-medium">✅ Phê duyệt thành công! Bây giờ bấm Đăng Bán.</p>}
-      {error && <p className="mt-2 text-sm text-red-600 font-medium">❌ Lỗi: {(error as any).shortMessage || error.message}</p>}
+      {/* Status messages */}
+      {hash && (
+        <div className="status-badge status-badge--info">
+          📋 Tx: {hash.slice(0, 10)}...{hash.slice(-8)}
+        </div>
+      )}
+      {isConfirmed && step === 'LIST' && (
+        <div className="status-badge status-badge--success">
+          🎉 Đăng bán thành công! Xem tại tab &quot;Khám Phá&quot;.
+        </div>
+      )}
+      {isConfirmed && step === 'APPROVE' && (
+        <div className="status-badge status-badge--warning">
+          ✅ Phê duyệt xong! Bấm tiếp để Đăng Bán.
+        </div>
+      )}
+      {error && (
+        <div className="status-badge status-badge--error">
+          ❌ {(error as any).shortMessage || error.message}
+        </div>
+      )}
     </div>
   )
 }
