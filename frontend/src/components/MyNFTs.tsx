@@ -8,8 +8,15 @@ export function MyNFTs() {
   const [mounted, setMounted] = useState(false)
   const { address, isConnected } = useAccount()
 
-  // Quét dải token từ 0 đến 19 để tìm các token thuộc sở hữu của ví hiện tại
-  const tokenIdsToScan = Array.from({ length: 20 }, (_, i) => BigInt(i))
+  // Đọc danh sách tất cả token đã mint từ contract
+  const { data: allTokens } = useReadContract({
+    address: MARKETPLACE_ADDRESS,
+    abi: MARKETPLACE_ABI,
+    functionName: 'getAllTokens',
+    query: { refetchOnMount: 'always' },
+  })
+
+  const tokenIdsToScan: bigint[] = allTokens ? (allTokens as bigint[]) : []
 
   useEffect(() => {
     setMounted(true)
@@ -48,33 +55,23 @@ export function MyNFTs() {
         ))}
       </div>
 
-      <MyNFTsEmptyCheck tokenIds={tokenIdsToScan} userAddress={address} />
+      <MyNFTsEmptyCheck userAddress={address} />
     </div>
   )
 }
 
-/** Kiểm tra xem user có NFT nào không */
-function MyNFTsEmptyCheck({ tokenIds, userAddress }: { tokenIds: bigint[]; userAddress?: string }) {
-  const results = tokenIds.map((id) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { data } = useReadContract({
-      address: MARKETPLACE_ADDRESS,
-      abi: MARKETPLACE_ABI,
-      functionName: 'ownerOf',
-      args: [id],
-    })
-    return data
+/** Kiểm tra xem user có NFT nào không — dùng balanceOf thay vì gọi hook trong vòng lặp */
+function MyNFTsEmptyCheck({ userAddress }: { userAddress?: string }) {
+  const { data: balance } = useReadContract({
+    address: MARKETPLACE_ADDRESS,
+    abi: MARKETPLACE_ABI,
+    functionName: 'balanceOf',
+    args: userAddress ? [userAddress as `0x${string}`] : undefined,
+    query: { refetchOnMount: 'always' },
   })
 
-  const hasAny = results.some((owner) => {
-    if (!owner || !userAddress) return false
-    return (owner as string).toLowerCase() === userAddress.toLowerCase()
-  })
-
-  if (hasAny) return null
-
-  const allLoaded = results.every((r) => r !== undefined)
-  if (!allLoaded) return null
+  // Đang loading hoặc user có NFT → không hiện empty state
+  if (balance === undefined || (balance as bigint) > BigInt(0)) return null
 
   return (
     <div className="empty-state">
@@ -101,6 +98,7 @@ function MyNFTInfoCard({
     abi: MARKETPLACE_ABI,
     functionName: 'ownerOf',
     args: [tokenId],
+    query: { refetchOnMount: 'always' },
   })
 
   // Đọc tokenURI
@@ -109,6 +107,7 @@ function MyNFTInfoCard({
     abi: MARKETPLACE_ABI,
     functionName: 'tokenURI',
     args: [tokenId],
+    query: { refetchOnMount: 'always' },
   })
 
   // Kiểm tra xem có đang listed trên sàn không
@@ -117,6 +116,7 @@ function MyNFTInfoCard({
     abi: MARKETPLACE_ABI,
     functionName: 'listings',
     args: [tokenId],
+    query: { refetchOnMount: 'always' },
   })
 
   const isMyNFT =

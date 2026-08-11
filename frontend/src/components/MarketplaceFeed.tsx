@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi'
 import { useQueryClient } from '@tanstack/react-query'
 import { formatEther } from 'viem'
@@ -10,8 +10,15 @@ export function MarketplaceFeed() {
   const [mounted, setMounted] = useState(false)
   const { isConnected } = useAccount()
 
-  // Quét từ Token ID 0 đến 19
-  const activeTokenIds = Array.from({ length: 20 }, (_, i) => BigInt(i))
+  // Đọc danh sách tất cả token đã mint từ contract
+  const { data: allTokens } = useReadContract({
+    address: MARKETPLACE_ADDRESS,
+    abi: MARKETPLACE_ABI,
+    functionName: 'getAllTokens',
+    query: { refetchOnMount: 'always' },
+  })
+
+  const activeTokenIds: bigint[] = allTokens ? (allTokens as bigint[]) : []
 
   useEffect(() => {
     setMounted(true)
@@ -51,39 +58,71 @@ export function MarketplaceFeed() {
   )
 }
 
-/** Kiểm tra xem có NFT nào đang bán không */
+/** Kiểm tra xem có NFT nào đang bán không — tách thành sub-component để không vi phạm Rules of Hooks */
 function MarketplaceEmptyCheck({ tokenIds }: { tokenIds: bigint[] }) {
-  const results = tokenIds.map((id) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { data } = useReadContract({
-      address: MARKETPLACE_ADDRESS,
-      abi: MARKETPLACE_ABI,
-      functionName: 'listings',
-      args: [id],
-    })
-    return data
-  })
+  const [listedCount, setListedCount] = useState(0)
+  const [loadedCount, setLoadedCount] = useState(0)
 
-  const hasAny = results.some((data) => {
-    if (!data) return false
-    const seller = (data as any)[1]
-    return seller !== '0x0000000000000000000000000000000000000000'
-  })
+  // Reset khi danh sách token thay đổi
+  useEffect(() => {
+    setListedCount(0)
+    setLoadedCount(0)
+  }, [tokenIds.length])
 
-  if (hasAny) return null
-
-  const allLoaded = results.every((r) => r !== undefined)
-  if (!allLoaded) return null
+  const allLoaded = tokenIds.length > 0 && loadedCount >= tokenIds.length
 
   return (
-    <div className="empty-state">
-      <span className="empty-state__icon">🏜️</span>
-      <p className="empty-state__title">Chưa có NFT nào đang bán</p>
-      <p className="empty-state__text">
-        Hãy mint NFT rồi đăng bán tại tab &quot;Đăng Bán&quot;!
-      </p>
-    </div>
+    <>
+      {tokenIds.map((id) => (
+        <SingleListingCheck
+          key={id.toString()}
+          tokenId={id}
+          onResult={(isListed) => {
+            setLoadedCount((c) => c + 1)
+            if (isListed) setListedCount((c) => c + 1)
+          }}
+        />
+      ))}
+      {allLoaded && listedCount === 0 && (
+        <div className="empty-state">
+          <span className="empty-state__icon">🏜️</span>
+          <p className="empty-state__title">Chưa có NFT nào đang bán</p>
+          <p className="empty-state__text">
+            Hãy mint NFT rồi đăng bán tại tab &quot;Đăng Bán&quot;!
+          </p>
+        </div>
+      )}
+    </>
   )
+}
+
+/** Sub-component kiểm tra listing của từng token — mỗi component có hook riêng (hợp lệ) */
+function SingleListingCheck({
+  tokenId,
+  onResult,
+}: {
+  tokenId: bigint
+  onResult: (isListed: boolean) => void
+}) {
+  const { data } = useReadContract({
+    address: MARKETPLACE_ADDRESS,
+    abi: MARKETPLACE_ABI,
+    functionName: 'listings',
+    args: [tokenId],
+    query: { refetchOnMount: 'always' },
+  })
+
+  const reported = useRef(false)
+
+  useEffect(() => {
+    if (data !== undefined && !reported.current) {
+      reported.current = true
+      const seller = (data as any)[1]
+      onResult(seller !== '0x0000000000000000000000000000000000000000')
+    }
+  }, [data, onResult])
+
+  return null
 }
 
 function NFTCard({ tokenId }: { tokenId: bigint }) {
@@ -95,6 +134,7 @@ function NFTCard({ tokenId }: { tokenId: bigint }) {
     abi: MARKETPLACE_ABI,
     functionName: 'listings',
     args: [tokenId],
+    query: { refetchOnMount: 'always' },
   })
 
   const { data: tokenURI } = useReadContract({
@@ -102,6 +142,7 @@ function NFTCard({ tokenId }: { tokenId: bigint }) {
     abi: MARKETPLACE_ABI,
     functionName: 'tokenURI',
     args: [tokenId],
+    query: { refetchOnMount: 'always' },
   })
 
   const { data: hash, writeContract, isPending, error } = useWriteContract()
