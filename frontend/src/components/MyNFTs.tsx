@@ -13,7 +13,10 @@ export function MyNFTs() {
     address: MARKETPLACE_ADDRESS,
     abi: MARKETPLACE_ABI,
     functionName: 'getAllTokens',
-    query: { refetchOnMount: 'always' },
+    query: {
+      refetchOnMount: 'always',
+      refetchInterval: 3000, // Tự động polling mỗi 3 giây
+    },
   })
 
   const tokenIdsToScan: bigint[] = allTokens ? (allTokens as bigint[]) : []

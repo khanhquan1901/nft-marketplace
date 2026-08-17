@@ -1,0 +1,73 @@
+{
+  "nfts": [
+    {
+      "tokenId": "0",
+      "tokenURI": "1111",
+      "minter": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "status": "LISTED"
+    },
+    {
+      "tokenId": "1",
+      "tokenURI": "2",
+      "minter": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "status": "NOT_LISTED"
+    }
+  ],
+  "listings": [
+    {
+      "tokenId": "0",
+      "seller": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "price": "1000000000000000000",
+      "status": "ACTIVE"
+    }
+  ],
+  "transactions": [
+    {
+      "tokenId": "0",
+      "type": "MINT",
+      "from": null,
+      "to": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "price": "0",
+      "blockNumber": "2",
+      "transactionHash": "0x4e4ee4e85869e46f44b9a8e32b57a969b8ff28dea0c6dd1bb4fba640fd9b132d"
+    },
+    {
+      "tokenId": "0",
+      "type": "LIST",
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": null,
+      "price": "1000000000000000000",
+      "blockNumber": "4",
+      "transactionHash": "0x9a760f19f9976cc4a20f868a0b0b1f6f83b2049aa88f907629030f8bdb1a3b91"
+    },
+    {
+      "tokenId": "1",
+      "type": "MINT",
+      "from": null,
+      "to": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "price": "0",
+      "blockNumber": "5",
+      "transactionHash": "0xdecc2d1a3493abd415fe831947e398753521437fc01dbea0129228ce87777369"
+    },
+    {
+      "tokenId": "1",
+      "type": "LIST",
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": null,
+      "price": "2000000000000000000",
+      "blockNumber": "7",
+      "transactionHash": "0xb5dba8ceb99000e7d5ac43f08a3c72490b8217914c6cd668b32f48da9b75713e"
+    },
+    {
+      "tokenId": "1",
+      "type": "CANCEL",
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": null,
+      "price": "0",
+      "blockNumber": "8",
+      "transactionHash": "0xdbf424c6bc2df20f6f48e1c84c42f48a3d2fae3f0ea73ec74f2cbb0165f57669"
+    }
+  ]
+}

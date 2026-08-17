@@ -1,0 +1,12 @@
+{
+  "name": "nft-indexer",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node indexer.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "viem": "^2.0.0"
+  }
+}

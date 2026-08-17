@@ -17,15 +17,15 @@ contract NFTMarketplace is ERC721URIStorage, ReentrancyGuard {
     mapping(uint256 => Listing) public listings;
 
     // Các sự kiện (Events) để Frontend (Next.js) có thể lắng nghe và cập nhật UI
-    event TokenMinted(uint256 indexed tokenId, string tokenURI, address minter);
-    event TokenListed(uint256 indexed tokenId, uint256 price, address seller);
-    event TokenSold(uint256 indexed tokenId, uint256 price, address seller, address buyer);
-    event ListingCanceled(uint256 indexed tokenId, address seller);
+    event TokenMinted(uint256 indexed tokenId, string tokenURI, address indexed minter);
+    event TokenListed(uint256 indexed tokenId, uint256 price, address indexed seller);
+    event TokenSold(uint256 indexed tokenId, uint256 price, address indexed seller, address indexed buyer);
+    event ListingCanceled(uint256 indexed tokenId, address indexed seller);
 
     constructor() ERC721("DApp NFT", "DNFT") {}
     uint256[] public allTokens;
 
-    /**
+    /**x
      * @dev 1. Mint (Tạo) NFT mới
      * Người dùng truyền vào tokenURI (link IPFS chứa hình ảnh và metadata)
      */

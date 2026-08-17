@@ -16,10 +16,14 @@ export function MintNFT() {
     hash,
   })
 
-  // Khi mint thành công → invalidate tất cả queries để MyNFTs tự động refresh
+  // Khi mint thành công → refetch tất cả queries để MyNFTs tự động refresh
   useEffect(() => {
     if (isConfirmed) {
-      queryClient.invalidateQueries()
+      // Delay nhỏ để đợi RPC node đồng bộ block mới
+      const timer = setTimeout(() => {
+        queryClient.refetchQueries()
+      }, 2000)
+      return () => clearTimeout(timer)
     }
   }, [isConfirmed, queryClient])
 
