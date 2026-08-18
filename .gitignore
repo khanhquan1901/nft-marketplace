@@ -53,3 +53,5 @@ Thumbs.db
 !.vscode/extensions.json
 .idea/
 *.swp
+
+indexer/data/database.json

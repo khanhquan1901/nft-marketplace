@@ -10,7 +10,7 @@ export function MintNFT() {
   const { isConnected } = useAccount()
   const queryClient = useQueryClient()
 
-  const { data: hash, writeContract, isPending, error } = useWriteContract()
+  const { data: hash, writeContract, isPending, error, reset } = useWriteContract()
 
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash,
@@ -22,14 +22,20 @@ export function MintNFT() {
       // Delay nhỏ để đợi RPC node đồng bộ block mới
       const timer = setTimeout(() => {
         queryClient.refetchQueries()
+        // Reset state để có thể mint tiếp lần sau
+        reset()
+        setTokenURI('')
       }, 2000)
       return () => clearTimeout(timer)
     }
-  }, [isConfirmed, queryClient])
+  }, [isConfirmed, queryClient, reset])
 
   const handleMint = (e: React.FormEvent) => {
     e.preventDefault()
     if (!tokenURI) return
+
+    // Reset state cũ trước khi mint mới (xóa hash, error cũ)
+    reset()
 
     writeContract({
       address: MARKETPLACE_ADDRESS,
