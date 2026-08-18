@@ -1,14 +1,57 @@
-# Compiler files
+# ========================
+# Foundry & Solidity
+# ========================
 cache/
 out/
 
-# Ignores development broadcast logs
-!/broadcast
+# Broadcast logs
+broadcast/
 /broadcast/*/31337/
+/broadcast/*/11155111/
 /broadcast/**/dry-run/
 
-# Docs
+# Gas snapshot & Coverage
+.gas-snapshot
+coverage/
+lcov.info
+
+# Security / Audit tools
+crytic-export/
+slither/
+slither-report.json
+
+# ========================
+# Environment & Secrets (Bảo mật)
+# ========================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+keystores/
+
+# ========================
+# Node / Package Managers (Nếu có)
+# ========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========================
+# Docs & Static Files
+# ========================
 docs/
 
-# Dotenv file
-.env
+# ========================
+# IDE & System Files
+# ========================
+.DS_Store
+Thumbs.db
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+
+indexer/data/database.json

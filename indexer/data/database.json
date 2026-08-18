@@ -1,0 +1,71 @@
+{
+  "nfts": [
+    {
+      "tokenId": "0",
+      "tokenURI": "ipfs/QmYCV6wgVxqCLE7CyzkKHxQzQeWNHUd31Bay9VdbFL2hma",
+      "minter": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "status": "LISTED"
+    },
+    {
+      "tokenId": "1",
+      "tokenURI": "QmeVHZzKGEDbEbG5MVz4hUucNf4qZTRfW18AgdJNTrv22m",
+      "minter": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "status": "NOT_LISTED"
+    },
+    {
+      "tokenId": "2",
+      "tokenURI": "ipfs/QmeVHZzKGEDbEbG5MVz4hUucNf4qZTRfW18AgdJNTrv22m",
+      "minter": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "status": "NOT_LISTED"
+    }
+  ],
+  "listings": [
+    {
+      "tokenId": "0",
+      "seller": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "price": "1000000000000000000",
+      "status": "ACTIVE"
+    }
+  ],
+  "transactions": [
+    {
+      "tokenId": "0",
+      "type": "MINT",
+      "from": null,
+      "to": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "price": "0",
+      "blockNumber": "2",
+      "transactionHash": "0x60d49fbcd39b82546cd42666969fe2b8f78c6411e0da6624c2e094bed95abf2f"
+    },
+    {
+      "tokenId": "0",
+      "type": "LIST",
+      "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "to": null,
+      "price": "1000000000000000000",
+      "blockNumber": "4",
+      "transactionHash": "0xf5210ada2493f215036d73d8d8cead5cfda9d7ed16cb9fdf8f5948d9b47bd97e"
+    },
+    {
+      "tokenId": "1",
+      "type": "MINT",
+      "from": null,
+      "to": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "price": "0",
+      "blockNumber": "5",
+      "transactionHash": "0x77ddd7cad8e0724e440fe6c400a21b64e2d1efe1a4ce27d77940f4d226d04ec6"
+    },
+    {
+      "tokenId": "2",
+      "type": "MINT",
+      "from": null,
+      "to": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      "price": "0",
+      "blockNumber": "6",
+      "transactionHash": "0x9593955875d760f47b409f77c9162f9454883f1a43f1843c103a5054e907115c"
+    }
+  ]
+}

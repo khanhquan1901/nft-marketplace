@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useReadContract, useAccount } from 'wagmi'
 import { MARKETPLACE_ADDRESS, MARKETPLACE_ABI } from '../constants'
+import { ipfsToHttp } from '../utils/ipfs'
 
 export function MyNFTs() {
   const [mounted, setMounted] = useState(false)
@@ -13,7 +14,10 @@ export function MyNFTs() {
     address: MARKETPLACE_ADDRESS,
     abi: MARKETPLACE_ABI,
     functionName: 'getAllTokens',
-    query: { refetchOnMount: 'always' },
+    query: {
+      refetchOnMount: 'always',
+      refetchInterval: 3000, // Tự động polling mỗi 3 giây
+    },
   })
 
   const tokenIdsToScan: bigint[] = allTokens ? (allTokens as bigint[]) : []
@@ -67,7 +71,10 @@ function MyNFTsEmptyCheck({ userAddress }: { userAddress?: string }) {
     abi: MARKETPLACE_ABI,
     functionName: 'balanceOf',
     args: userAddress ? [userAddress as `0x${string}`] : undefined,
-    query: { refetchOnMount: 'always' },
+    query: {
+      refetchOnMount: 'always',
+      refetchInterval: 3000,
+    },
   })
 
   // Đang loading hoặc user có NFT → không hiện empty state
@@ -98,7 +105,10 @@ function MyNFTInfoCard({
     abi: MARKETPLACE_ABI,
     functionName: 'ownerOf',
     args: [tokenId],
-    query: { refetchOnMount: 'always' },
+    query: {
+      refetchOnMount: 'always',
+      refetchInterval: 3000,
+    },
   })
 
   // Đọc tokenURI
@@ -107,7 +117,10 @@ function MyNFTInfoCard({
     abi: MARKETPLACE_ABI,
     functionName: 'tokenURI',
     args: [tokenId],
-    query: { refetchOnMount: 'always' },
+    query: {
+      refetchOnMount: 'always',
+      refetchInterval: 3000,
+    },
   })
 
   // Kiểm tra xem có đang listed trên sàn không
@@ -116,7 +129,10 @@ function MyNFTInfoCard({
     abi: MARKETPLACE_ABI,
     functionName: 'listings',
     args: [tokenId],
-    query: { refetchOnMount: 'always' },
+    query: {
+      refetchOnMount: 'always',
+      refetchInterval: 3000,
+    },
   })
 
   const isMyNFT =
@@ -131,22 +147,38 @@ function MyNFTInfoCard({
     listingSeller !== '0x0000000000000000000000000000000000000000'
 
   const uriString = tokenURI ? String(tokenURI) : ''
+  const imageHttpUrl = ipfsToHttp(uriString)
 
   return (
     <div className="nft-card" id={`my-nft-card-${tokenId}`}>
-      {/* Image / URI preview area */}
-      <div className="nft-card__image" style={{ position: 'relative' }}>
+      {/* Image area */}
+      <div className="nft-card__image" style={{ position: 'relative', overflow: 'hidden' }}>
         <span className="owned-badge">
           {isListed ? '📢 ĐANG BÁN' : '✅ SỞ HỮU'}
         </span>
-        {uriString ? (
-          <span className="nft-card__image-text">
-            {uriString.substring(0, 80)}
-            {uriString.length > 80 ? '...' : ''}
-          </span>
-        ) : (
-          <span className="nft-card__image-text">Loading...</span>
-        )}
+        {imageHttpUrl ? (
+          <img
+            src={imageHttpUrl}
+            alt={`NFT #${tokenId}`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+            onError={(e) => {
+              // Ảnh lỗi → hiện text URI thay thế
+              (e.target as HTMLImageElement).style.display = 'none'
+              const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement
+              if (fallback) fallback.style.display = 'block'
+            }}
+          />
+        ) : null}
+        <span
+          className="nft-card__image-text"
+          style={{ display: imageHttpUrl ? 'none' : 'block' }}
+        >
+          {uriString ? uriString.substring(0, 80) : 'Loading...'}
+        </span>
       </div>
 
       {/* Body — hiển thị thông tin */}

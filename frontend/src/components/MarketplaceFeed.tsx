@@ -5,6 +5,7 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt, useAcc
 import { useQueryClient } from '@tanstack/react-query'
 import { formatEther } from 'viem'
 import { MARKETPLACE_ADDRESS, MARKETPLACE_ABI } from '../constants'
+import { ipfsToHttp } from '../utils/ipfs'
 
 export function MarketplaceFeed() {
   const [mounted, setMounted] = useState(false)
@@ -187,12 +188,32 @@ function NFTCard({ tokenId }: { tokenId: bigint }) {
   if (!isForSale) return null
 
   const uriString = tokenURI ? String(tokenURI) : ''
+  const imageHttpUrl = ipfsToHttp(uriString)
 
   return (
     <div className="nft-card" id={`nft-card-${tokenId}`}>
       {/* Image area */}
-      <div className="nft-card__image">
-        <span className="nft-card__image-text">
+      <div className="nft-card__image" style={{ position: 'relative', overflow: 'hidden' }}>
+        {imageHttpUrl ? (
+          <img
+            src={imageHttpUrl}
+            alt={`NFT #${tokenId}`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none'
+              const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement
+              if (fallback) fallback.style.display = 'block'
+            }}
+          />
+        ) : null}
+        <span
+          className="nft-card__image-text"
+          style={{ display: imageHttpUrl ? 'none' : 'block' }}
+        >
           {uriString
             ? `${uriString.substring(0, 60)}${uriString.length > 60 ? '...' : ''}`
             : 'Loading...'}
