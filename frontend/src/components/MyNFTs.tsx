@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useReadContract, useAccount } from 'wagmi'
 import { MARKETPLACE_ADDRESS, MARKETPLACE_ABI } from '../constants'
 import { ipfsToHttp } from '../utils/ipfs'
+import { useNFTMetadata } from '../hooks/useNFTMetadata'
 
 export function MyNFTs() {
   const [mounted, setMounted] = useState(false)
@@ -140,14 +141,18 @@ function MyNFTInfoCard({
     userAddress &&
     (owner as string).toLowerCase() === userAddress.toLowerCase()
 
-  if (!isMyNFT) return null
-
   const listingSeller = listingData ? (listingData as any)[1] : '0x0'
   const isListed =
     listingSeller !== '0x0000000000000000000000000000000000000000'
 
   const uriString = tokenURI ? String(tokenURI) : ''
-  const imageHttpUrl = ipfsToHttp(uriString)
+  // Hook phải được gọi TRƯỚC bất kỳ early return nào (Rules of Hooks)
+  const { imageUrl, metadata, isLoading: isLoadingMeta } = useNFTMetadata(tokenURI ? String(tokenURI) : undefined)
+
+  // Tên NFT từ metadata (nếu có)
+  const nftName = metadata?.name || `NFT #${tokenId.toString()}`
+
+  if (!isMyNFT) return null
 
   return (
     <div className="nft-card" id={`my-nft-card-${tokenId}`}>
@@ -156,10 +161,12 @@ function MyNFTInfoCard({
         <span className="owned-badge">
           {isListed ? '📢 ĐANG BÁN' : '✅ SỞ HỮU'}
         </span>
-        {imageHttpUrl ? (
+        {isLoadingMeta ? (
+          <span className="nft-card__image-text">⏳ Đang tải metadata...</span>
+        ) : imageUrl ? (
           <img
-            src={imageHttpUrl}
-            alt={`NFT #${tokenId}`}
+            src={imageUrl}
+            alt={nftName}
             style={{
               width: '100%',
               height: '100%',
@@ -175,9 +182,9 @@ function MyNFTInfoCard({
         ) : null}
         <span
           className="nft-card__image-text"
-          style={{ display: imageHttpUrl ? 'none' : 'block' }}
+          style={{ display: (!isLoadingMeta && !imageUrl) ? 'block' : (imageUrl ? 'none' : 'block') }}
         >
-          {uriString ? uriString.substring(0, 80) : 'Loading...'}
+          {uriString ? uriString.substring(0, 80) : 'Không có metadata'}
         </span>
       </div>
 

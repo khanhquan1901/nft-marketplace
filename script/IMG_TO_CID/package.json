@@ -1,0 +1,18 @@
+{
+    "name":  "img_to_cid",
+    "version":  "1.0.0",
+    "description":  "",
+    "main":  "upload-file.js",
+    "scripts":  {
+                    "test":  "echo \"Error: no test specified\" \u0026\u0026 exit 1"
+                },
+    "keywords":  [
+
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "dependencies":  {
+                         "dotenv":  "^17.4.2"
+                     },
+    "type":  "module"
+}

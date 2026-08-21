@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { formatEther } from 'viem'
 import { MARKETPLACE_ADDRESS, MARKETPLACE_ABI } from '../constants'
 import { ipfsToHttp } from '../utils/ipfs'
+import { useNFTMetadata } from '../hooks/useNFTMetadata'
 
 export function MarketplaceFeed() {
   const [mounted, setMounted] = useState(false)
@@ -166,6 +167,13 @@ function NFTCard({ tokenId }: { tokenId: bigint }) {
   const isForSale = seller !== '0x0000000000000000000000000000000000000000'
   const isOwner = currentUserAddress && seller && currentUserAddress.toLowerCase() === seller.toLowerCase()
 
+  // Hook phải được gọi TRƯỚC bất kỳ early return nào (Rules of Hooks)
+  const uriString = tokenURI ? String(tokenURI) : ''
+  const { imageUrl, metadata, isLoading: isLoadingMeta } = useNFTMetadata(tokenURI ? String(tokenURI) : undefined)
+
+  // Tên NFT từ metadata (nếu có)
+  const nftName = metadata?.name || `NFT #${tokenId.toString()}`
+
   const handleBuy = () => {
     writeContract({
       address: MARKETPLACE_ADDRESS,
@@ -187,17 +195,16 @@ function NFTCard({ tokenId }: { tokenId: bigint }) {
 
   if (!isForSale) return null
 
-  const uriString = tokenURI ? String(tokenURI) : ''
-  const imageHttpUrl = ipfsToHttp(uriString)
-
   return (
     <div className="nft-card" id={`nft-card-${tokenId}`}>
       {/* Image area */}
       <div className="nft-card__image" style={{ position: 'relative', overflow: 'hidden' }}>
-        {imageHttpUrl ? (
+        {isLoadingMeta ? (
+          <span className="nft-card__image-text">⏳ Đang tải metadata...</span>
+        ) : imageUrl ? (
           <img
-            src={imageHttpUrl}
-            alt={`NFT #${tokenId}`}
+            src={imageUrl}
+            alt={nftName}
             style={{
               width: '100%',
               height: '100%',
@@ -212,11 +219,11 @@ function NFTCard({ tokenId }: { tokenId: bigint }) {
         ) : null}
         <span
           className="nft-card__image-text"
-          style={{ display: imageHttpUrl ? 'none' : 'block' }}
+          style={{ display: (!isLoadingMeta && !imageUrl) ? 'block' : (imageUrl ? 'none' : 'block') }}
         >
           {uriString
             ? `${uriString.substring(0, 60)}${uriString.length > 60 ? '...' : ''}`
-            : 'Loading...'}
+            : 'Không có metadata'}
         </span>
       </div>
 

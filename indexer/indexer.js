@@ -882,7 +882,219 @@ function processEvents(events) {
 
 
 // =====================================================
-// 20. MAIN
+// 20. REAL-TIME WATCHING
+// =====================================================
+
+function startWatching() {
+
+    console.log("");
+    console.log("================================");
+    console.log("REAL-TIME WATCHING STARTED");
+    console.log("================================");
+    console.log(
+        "Đang lắng nghe events mới từ blockchain..."
+    );
+
+
+    // -------------------------------------------------
+    // Watch TokenMinted
+    // -------------------------------------------------
+
+    const unwatchMint =
+        client.watchContractEvent({
+
+            address: CONTRACT_ADDRESS,
+
+            abi: [TokenMintedEvent],
+
+            eventName: "TokenMinted",
+
+            onLogs: (logs) => {
+
+                for (const log of logs) {
+
+                    console.log("");
+                    console.log(
+                        "[REALTIME] TokenMinted detected!"
+                    );
+
+                    processMint(log);
+                }
+
+                saveDatabase();
+
+                printStats();
+            },
+
+            onError: (error) => {
+
+                console.error(
+                    "[REALTIME] Lỗi watch TokenMinted:",
+                    error.message
+                );
+            }
+        });
+
+
+    // -------------------------------------------------
+    // Watch TokenListed
+    // -------------------------------------------------
+
+    const unwatchList =
+        client.watchContractEvent({
+
+            address: CONTRACT_ADDRESS,
+
+            abi: [TokenListedEvent],
+
+            eventName: "TokenListed",
+
+            onLogs: (logs) => {
+
+                for (const log of logs) {
+
+                    console.log("");
+                    console.log(
+                        "[REALTIME] TokenListed detected!"
+                    );
+
+                    processList(log);
+                }
+
+                saveDatabase();
+
+                printStats();
+            },
+
+            onError: (error) => {
+
+                console.error(
+                    "[REALTIME] Lỗi watch TokenListed:",
+                    error.message
+                );
+            }
+        });
+
+
+    // -------------------------------------------------
+    // Watch TokenSold
+    // -------------------------------------------------
+
+    const unwatchSold =
+        client.watchContractEvent({
+
+            address: CONTRACT_ADDRESS,
+
+            abi: [TokenSoldEvent],
+
+            eventName: "TokenSold",
+
+            onLogs: (logs) => {
+
+                for (const log of logs) {
+
+                    console.log("");
+                    console.log(
+                        "[REALTIME] TokenSold detected!"
+                    );
+
+                    processSale(log);
+                }
+
+                saveDatabase();
+
+                printStats();
+            },
+
+            onError: (error) => {
+
+                console.error(
+                    "[REALTIME] Lỗi watch TokenSold:",
+                    error.message
+                );
+            }
+        });
+
+
+    // -------------------------------------------------
+    // Watch ListingCanceled
+    // -------------------------------------------------
+
+    const unwatchCancel =
+        client.watchContractEvent({
+
+            address: CONTRACT_ADDRESS,
+
+            abi: [ListingCanceledEvent],
+
+            eventName: "ListingCanceled",
+
+            onLogs: (logs) => {
+
+                for (const log of logs) {
+
+                    console.log("");
+                    console.log(
+                        "[REALTIME] ListingCanceled detected!"
+                    );
+
+                    processCancel(log);
+                }
+
+                saveDatabase();
+
+                printStats();
+            },
+
+            onError: (error) => {
+
+                console.error(
+                    "[REALTIME] Lỗi watch ListingCanceled:",
+                    error.message
+                );
+            }
+        });
+
+
+    // Trả về hàm để dừng watching
+    return () => {
+
+        unwatchMint();
+        unwatchList();
+        unwatchSold();
+        unwatchCancel();
+
+        console.log("");
+        console.log("Đã dừng real-time watching.");
+    };
+}
+
+
+// =====================================================
+// 21. THỐNG KÊ
+// =====================================================
+
+function printStats() {
+
+    console.log("");
+    console.log("--- Thống kê ---");
+
+    console.log(
+        `NFTs: ${database.nfts.length}`
+    );
+
+    console.log(
+        `Listings: ${database.listings.length}`
+    );
+
+    console.log(
+        `Transactions: ${database.transactions.length}`
+    );
+}
+
+
+// =====================================================
+// 22. MAIN
 // =====================================================
 
 async function main() {
@@ -916,11 +1128,11 @@ async function main() {
 
 
         // ---------------------------------------------
-        // Đọc tất cả events
+        // Đọc tất cả events (historical sync)
         // ---------------------------------------------
 
         console.log("");
-        console.log("Đang đọc blockchain...");
+        console.log("Đang đọc blockchain (historical sync)...");
 
 
         const events =
@@ -948,31 +1160,66 @@ async function main() {
 
 
         // ---------------------------------------------
-        // Thống kê
+        // Thống kê sau historical sync
         // ---------------------------------------------
 
         console.log("");
         console.log("================================");
-        console.log("INDEXER HOÀN THÀNH");
+        console.log("HISTORICAL SYNC HOÀN THÀNH");
         console.log("================================");
 
-
         console.log(
-            `NFTs: ${database.nfts.length}`
+            `Đã quét từ block ${INDEX_FROM_BLOCK} đến ${latestBlock}`
         );
 
-        console.log(
-            `Listings: ${database.listings.length}`
-        );
+        printStats();
 
-        console.log(
-            `Transactions: ${database.transactions.length}`
-        );
+
+        // ---------------------------------------------
+        // Bắt đầu real-time watching
+        // ---------------------------------------------
+
+        const stopWatching =
+            startWatching();
+
+
+        // ---------------------------------------------
+        // Xử lý tắt chương trình (graceful shutdown)
+        // ---------------------------------------------
+
+        process.on("SIGINT", () => {
+
+            console.log("");
+            console.log("================================");
+            console.log("ĐANG TẮT INDEXER...");
+            console.log("================================");
+
+            stopWatching();
+
+            saveDatabase();
+
+            console.log("Indexer đã tắt.");
+
+            process.exit(0);
+        });
+
+
+        process.on("SIGTERM", () => {
+
+            stopWatching();
+
+            saveDatabase();
+
+            process.exit(0);
+        });
 
 
         console.log("");
+        console.log("================================");
+        console.log("INDEXER ĐANG CHẠY");
+        console.log("================================");
         console.log(
-            `Đã quét từ block ${INDEX_FROM_BLOCK} đến ${latestBlock}`
+            "Nhấn Ctrl+C để dừng."
         );
 
 
@@ -986,12 +1233,14 @@ async function main() {
         console.error(
             error
         );
+
+        process.exit(1);
     }
 }
 
 
 // =====================================================
-// 21. START
+// 23. START
 // =====================================================
 
 main();
